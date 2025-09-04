@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Extra schedulers for the mflux project to support image generation models on Apple MLX framework. Namespace mflux.contrib.schedulers"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "mflux>=0.10.0",
+    "mlx>=0.27.0",
+]
 authors = [{name = "mflux community", email = "pls-file-gh-issue@users.noreply.github.com"}]
 classifiers = [
     "Intended Audience :: Developers",
@@ -23,3 +26,11 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "mflux.contrib.schedulers"
+namespace = true
+
+[dependency-groups]
+test = [
+    "diffusers>=0.35.1",
+    "pytest>=8.4.1",
+    "torch>=2.8.0",
+]

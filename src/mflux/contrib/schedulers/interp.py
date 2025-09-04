@@ -41,7 +41,7 @@ def mx_interp(x, xp, fp, left=None, right=None):
 
     # Handle boundary conditions
     if left is None:
-        left = fp
+        left = fp[0]
     if right is None:
         right = fp[-1]
 
