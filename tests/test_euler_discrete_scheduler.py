@@ -73,7 +73,7 @@ class TestEulerDiscreteScheduler(unittest.TestCase):
                 mx.random.seed(42)
                 torch.manual_seed(42)
                 np.random.seed(42)
-                
+
                 sample_mflux, sample_torch = self.get_dummy_data()
                 model_output_mflux, model_output_torch = self.get_dummy_data()
 
@@ -116,35 +116,43 @@ class TestEulerDiscreteScheduler(unittest.TestCase):
         # Create separate scheduler instances to avoid state interference
         mflux_scheduler1, _ = self.get_schedulers(prediction_type="epsilon")
         mflux_scheduler1.set_timesteps(4)
-        mflux_scheduler2, _ = self.get_schedulers(prediction_type="epsilon") 
+        mflux_scheduler2, _ = self.get_schedulers(prediction_type="epsilon")
         mflux_scheduler2.set_timesteps(4)
-        
+
         sample_mflux, _ = self.get_dummy_data()
         model_output_mflux, _ = self.get_dummy_data()
         mflux_t = mflux_scheduler1.timesteps[0]
-        
+
         # Two calls with s_churn > 0 should produce different outputs due to random noise
-        output1 = mflux_scheduler1.step(model_output_mflux, mflux_t, sample_mflux, s_churn=0.1)
-        output2 = mflux_scheduler2.step(model_output_mflux, mflux_t, sample_mflux, s_churn=0.1)
-        
+        output1 = mflux_scheduler1.step(
+            model_output_mflux, mflux_t, sample_mflux, s_churn=0.1
+        )
+        output2 = mflux_scheduler2.step(
+            model_output_mflux, mflux_t, sample_mflux, s_churn=0.1
+        )
+
         # Outputs should be different due to stochastic noise
         self.assertFalse(
             mx.allclose(output1.prev_sample, output2.prev_sample, atol=1e-6),
-            "Stochastic sampling should produce different outputs"
+            "Stochastic sampling should produce different outputs",
         )
-        
+
         # Test deterministic behavior with s_churn=0
         mflux_scheduler3, _ = self.get_schedulers(prediction_type="epsilon")
         mflux_scheduler3.set_timesteps(4)
         mflux_scheduler4, _ = self.get_schedulers(prediction_type="epsilon")
         mflux_scheduler4.set_timesteps(4)
-        
-        output3 = mflux_scheduler3.step(model_output_mflux, mflux_t, sample_mflux, s_churn=0.0)
-        output4 = mflux_scheduler4.step(model_output_mflux, mflux_t, sample_mflux, s_churn=0.0)
-        
+
+        output3 = mflux_scheduler3.step(
+            model_output_mflux, mflux_t, sample_mflux, s_churn=0.0
+        )
+        output4 = mflux_scheduler4.step(
+            model_output_mflux, mflux_t, sample_mflux, s_churn=0.0
+        )
+
         self.assertTrue(
             mx.allclose(output3.prev_sample, output4.prev_sample, atol=1e-6),
-            "Deterministic sampling should produce identical outputs"
+            "Deterministic sampling should produce identical outputs",
         )
 
     def test_add_noise(self):

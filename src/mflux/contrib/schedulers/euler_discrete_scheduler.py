@@ -130,6 +130,34 @@ class EulerDiscreteScheduler(BaseScheduler):
     def sigmas(self):
         return self.impl.sigmas
 
+    def step(
+        self, model_output: mx.array, timestep: int, sample: mx.array, **kwargs
+    ) -> mx.array:
+        """
+        Perform one Euler discrete denoising step.
+
+        Args:
+            model_output: The noise prediction from the transformer
+            timestep: Current timestep index (0 to num_inference_steps-1)
+            sample: Current latent representation
+            **kwargs: Additional scheduler parameters (s_churn, s_tmin, s_tmax, s_noise)
+
+        Returns:
+            Updated latents after one Euler discrete step
+        """
+        # Convert timestep index to actual timestep value from the schedule
+        timestep_value = self.impl.timesteps[timestep]
+        result = self.impl.step(
+            model_output=model_output,
+            timestep=timestep_value,
+            sample=sample,
+            return_dict=True,  # Ensure we get the dataclass output
+            **kwargs,
+        )
+
+        # Return just the denoised sample for mflux
+        return result.prev_sample
+
 
 @dataclass
 class SchedulerImplementation:
@@ -207,9 +235,8 @@ class SchedulerImplementation:
         if self.rescale_betas_zero_snr:
             self.alphas_cumprod[-1] = 2**-24
 
-        sigmas = mx.array(
-            (((1 - self.alphas_cumprod) / self.alphas_cumprod) ** 0.5).tolist()[::-1]
-        )
+        sigmas = ((1 - self.alphas_cumprod) / self.alphas_cumprod) ** 0.5
+        sigmas = sigmas[::-1]
         timesteps = mx.linspace(
             0, self.num_train_timesteps - 1, self.num_train_timesteps, dtype=mx.float32
         )[::-1]
@@ -453,9 +480,8 @@ class SchedulerImplementation:
         if schedule_timesteps is None:
             schedule_timesteps = self.timesteps
 
-        indices = [
-            i for i, x in enumerate((schedule_timesteps == timestep).tolist()) if x
-        ]
+        mask = schedule_timesteps == timestep
+        indices = [i for i in range(len(mask)) if bool(mask[i])]
         pos = 1 if len(indices) > 1 else 0
         return indices[pos]
 
